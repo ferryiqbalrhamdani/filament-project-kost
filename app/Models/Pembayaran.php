@@ -12,6 +12,7 @@ class Pembayaran extends Model
         'akun_bank_id',
         'total_bayar',
         'catatan',
+        'tgl_transaksi',
     ];
 
     public function sewaKost()

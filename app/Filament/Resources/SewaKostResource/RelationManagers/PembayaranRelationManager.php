@@ -55,9 +55,10 @@ class PembayaranRelationManager extends RelationManager
                         'Belum Lunas' => 'Belum Lunas',
                     ])
                     ->default($this->getOwnerRecord()->status),
+                Forms\Components\DatePicker::make('tgl_tansaksi')
+                    ->required(),
 
                 Forms\Components\Textarea::make('catatan')
-                    ->required()
                     ->rows(7)
                     ->cols(7)
                     ->columnSpanFull(),

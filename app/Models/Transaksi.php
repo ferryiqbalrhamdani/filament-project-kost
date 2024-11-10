@@ -11,6 +11,7 @@ class Transaksi extends Model
         'jenis_transaksi',
         'saldo',
         'catatan',
+        'tgl_transaksi',
     ];
 
     public function pembayaran()

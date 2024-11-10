@@ -31,7 +31,7 @@ class TransaksiTerahir extends BaseWidget
                     ->searchable(),
                 Tables\Columns\TextColumn::make('catatan')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
+                Tables\Columns\TextColumn::make('tgl_transaksi')
                     ->label('Tanggal Transaksi')
                     ->dateTime()
                     ->sortable()
@@ -42,44 +42,54 @@ class TransaksiTerahir extends BaseWidget
                     ->prefix(fn($record) => $record->jenis_transaksi === 'Pemasukan' ? '' : '-')
                     ->sortable()
                     ->searchable(),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\Filter::make('created_at')
+                Tables\Filters\Filter::make('tgl_tansaksi')
                     ->form([
-                        Forms\Components\DatePicker::make('created_from')
-                            ->placeholder(fn($state): string => 'Dec 18, ' . now()->subYear()->format('Y')),
-                        Forms\Components\DatePicker::make('created_until')
-                            ->placeholder(fn($state): string => now()->format('M d, Y')),
+                        Forms\Components\DatePicker::make('tgl_transaksi_mulai')
+                            ->placeholder(fn($state): string => 'Dec 18, ' . now()->subYear()->format('Y'))
+                            ->default(function (): string {
+                                return Carbon::create(Carbon::now()->year, Carbon::now()->month, 9);
+                            }),
+                        Forms\Components\DatePicker::make('tgl_transaksi_selesai')
+                            ->placeholder(fn($state): string => now()->format('M d, Y'))
+                            ->default(function (): string {
+                                return Carbon::create(Carbon::now()->year, Carbon::now()->month + 1, 9);
+                            }),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
                             ->when(
-                                $data['created_from'] ?? null,
-                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                                $data['tgl_transaksi_mulai'] ?? null,
+                                fn(Builder $query, $date): Builder => $query->whereDate('tgl_transaksi', '>=', $date),
                             )
                             ->when(
-                                $data['created_until'] ?? null,
-                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                                $data['tgl_transaksi_selesai'] ?? null,
+                                fn(Builder $query, $date): Builder => $query->whereDate('tgl_transaksi', '<=', $date),
                             );
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
-                        if ($data['created_from'] ?? null) {
-                            $indicators['created_from'] = 'Order from ' . Carbon::parse($data['created_from'])->toFormattedDateString();
+                        if ($data['tgl_transaksi_mulai'] ?? null) {
+                            $indicators['tgl_transaksi_mulai'] = 'Tgl. transaksi mulai ' . Carbon::parse($data['tgl_transaksi_mulai'])->toFormattedDateString();
                         }
-                        if ($data['created_until'] ?? null) {
-                            $indicators['created_until'] = 'Order until ' . Carbon::parse($data['created_until'])->toFormattedDateString();
+                        if ($data['tgl_transaksi_selesai'] ?? null) {
+                            $indicators['tgl_transaksi_selesai'] = 'Tgl. transaksi selesai ' . Carbon::parse($data['tgl_transaksi_selesai'])->toFormattedDateString();
                         }
 
                         return $indicators;
                     }),
             ])
             ->groups([
-                Tables\Grouping\Group::make('created_at')
+                Tables\Grouping\Group::make('tgl_transaksi')
                     ->label('Tgl. Transaksi')
                     ->date()
                     ->collapsible(),
