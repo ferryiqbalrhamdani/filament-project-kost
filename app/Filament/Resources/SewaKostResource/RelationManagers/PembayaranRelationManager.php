@@ -109,7 +109,7 @@ class PembayaranRelationManager extends RelationManager
                     ->after(function ($data, $record) {
                         $status = $data['status'];
 
-                        $record->transaksi()->create([
+                        $record->transaksi()->update([
                             'saldo' => $record->total_bayar,
                             'tgl_transaksi' => $record->tgl_transaksi,
                         ]);
