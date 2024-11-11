@@ -41,7 +41,7 @@ class TransaksiResource extends Resource
                     ->mask(RawJs::make('$money($input)'))
                     ->stripCharacters(',')
                     ->numeric(),
-                Forms\Components\DatePicker::make('tgl_tansaksi')
+                Forms\Components\DatePicker::make('tgl_transaksi')
                     ->required(),
                 Forms\Components\Textarea::make('catatan')
                     ->columnSpanFull(),
@@ -63,7 +63,7 @@ class TransaksiResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('tgl_transaksi')
                     ->label('Tanggal Transaksi')
-                    ->dateTime()
+                    ->date()
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('saldo')

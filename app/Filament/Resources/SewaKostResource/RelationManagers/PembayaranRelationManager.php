@@ -55,7 +55,7 @@ class PembayaranRelationManager extends RelationManager
                         'Belum Lunas' => 'Belum Lunas',
                     ])
                     ->default($this->getOwnerRecord()->status),
-                Forms\Components\DatePicker::make('tgl_tansaksi')
+                Forms\Components\DatePicker::make('tgl_transaksi')
                     ->required(),
 
                 Forms\Components\Textarea::make('catatan')
@@ -96,6 +96,7 @@ class PembayaranRelationManager extends RelationManager
                             'jenis_transaksi' => 'Pemasukan',
                             'saldo' => $record->total_bayar,
                             'catatan' => 'Sewa kost',
+                            'tgl_transaksi' => $record->tgl_transaksi,
                         ]);
 
                         $this->getOwnerRecord()->update([
@@ -104,7 +105,19 @@ class PembayaranRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->after(function ($data, $record) {
+                        $status = $data['status'];
+
+                        $record->transaksi()->create([
+                            'saldo' => $record->total_bayar,
+                            'tgl_transaksi' => $record->tgl_transaksi,
+                        ]);
+
+                        $this->getOwnerRecord()->update([
+                            'status' => $status
+                        ]);
+                    }),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([

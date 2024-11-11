@@ -33,7 +33,7 @@ class TransaksiTerahir extends BaseWidget
                     ->searchable(),
                 Tables\Columns\TextColumn::make('tgl_transaksi')
                     ->label('Tanggal Transaksi')
-                    ->dateTime()
+                    ->date()
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('saldo')
