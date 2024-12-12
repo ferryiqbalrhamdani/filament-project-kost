@@ -126,4 +126,18 @@ class PembayaranRelationManager extends RelationManager
                 ]),
             ]);
     }
+
+    protected function afterSave(): void
+    {
+        $status = $this->data['status'];
+
+        $this->record->transaksi()->update([
+            'saldo' => $this->record->total_bayar,
+            'tgl_transaksi' => $this->record->tgl_transaksi,
+        ]);
+
+        $this->getOwnerRecord()->update([
+            'status' => $status
+        ]);
+    }
 }
