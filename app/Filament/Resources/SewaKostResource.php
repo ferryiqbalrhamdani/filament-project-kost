@@ -11,6 +11,7 @@ use App\Models\BiayaKost;
 use Filament\Tables\Table;
 use Filament\Support\RawJs;
 use Filament\Resources\Resource;
+use Filament\Tables\Grouping\Group;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\Summarizers\Sum;
 use App\Filament\Resources\SewaKostResource\Pages;
@@ -94,6 +95,15 @@ class SewaKostResource extends Resource
                         ->stripCharacters(',')
                         ->numeric()
                         ->readOnly(),
+                    Forms\Components\Radio::make('status_kamar')
+                        ->required()
+                        ->options([
+                            'Kamar Atas' => 'Kamar Atas',
+                            'Kamar Bawah' => 'Kamar Bawah',
+                        ])
+                        ->inline()
+                        ->inlineLabel(false)
+                        ->default('Kamar Atas'),
                 ])
                     ->columns(2),
             ]);
@@ -156,9 +166,15 @@ class SewaKostResource extends Resource
                     ->date()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('lama_sewa')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('status_kamar')
+                    ->sortable()
+                    ->badge()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
+                    ->sortable()
                     ->color(fn(string $state): string => match ($state) {
                         'Lunas' => 'success',
                         'Belum Lunas' => 'danger',
@@ -241,6 +257,10 @@ class SewaKostResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+            ])
+            ->groups([
+                Group::make('status_kamar')
+                    ->collapsible(),
             ]);
     }
 

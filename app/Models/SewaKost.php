@@ -15,6 +15,7 @@ class SewaKost extends Model
         'lama_sewa',
         'total_biaya',
         'status',
+        'status_kamar',
     ];
 
     public function cabangKost()
