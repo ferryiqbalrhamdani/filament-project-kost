@@ -9,8 +9,11 @@ use Filament\Forms\Form;
 use App\Models\Transaksi;
 use Filament\Tables\Table;
 use Filament\Support\RawJs;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Tables\Columns\Summarizers\Sum;
 use App\Filament\Resources\TransaksiResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -60,7 +63,8 @@ class TransaksiResource extends Resource
                     })
                     ->searchable(),
                 Tables\Columns\TextColumn::make('catatan')
-                    ->searchable(),
+                    ->searchable()
+                    ->description(fn(Transaksi $record): string => $record->catatan === 'Sewa kost' ? $record->pembayaran->sewaKost->status_kamar : ''),
                 Tables\Columns\TextColumn::make('tgl_transaksi')
                     ->label('Tanggal Transaksi')
                     ->date()
@@ -118,6 +122,31 @@ class TransaksiResource extends Resource
 
                         return $indicators;
                     }),
+
+                Tables\Filters\Filter::make('status_kamar')
+                    ->form([
+                        Forms\Components\Select::make('status_kamar')
+                            ->options([
+                                'Kamar Atas' => 'Kamar Atas',
+                                'Kamar Bawah' => 'Kamar Bawah',
+                            ]),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['status_kamar'] ?? null,
+                                fn(Builder $query, $statusKamar): Builder => $query->whereHas('pembayaran', fn(Builder $query) => $query->whereHas('sewaKost', fn(Builder $query) => $query->where('status_kamar', $statusKamar))),
+                            );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['status_kamar'] ?? null) {
+                            $indicators['status_kamar'] = 'Status Kamar: ' . $data['status_kamar'];
+                        }
+
+
+                        return $indicators;
+                    }),
             ])
             ->recordAction(null)
             ->recordUrl(null)
@@ -126,6 +155,8 @@ class TransaksiResource extends Resource
                     ->label('Tgl. Transaksi')
                     ->date()
                     ->collapsible(),
+                Tables\Grouping\Group::make('pembayaran.sewaKost.status_kamar')
+                    ->collapsible(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
@@ -133,6 +164,8 @@ class TransaksiResource extends Resource
 
                 Tables\Actions\DeleteAction::make()
                     ->visible(fn($record) => $record->pembayaran_id === null),
+
+                Tables\Actions\ViewAction::make()
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -162,5 +195,72 @@ class TransaksiResource extends Resource
         return [
             TransaksiOverview::class,
         ];
+    }
+
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Section::make('')
+                    ->schema([
+                        TextEntry::make('jenis_transaksi')
+                            ->badge()
+                            ->color(fn(string $state): string => match ($state) {
+                                'Pemasukan' => 'success',
+                                'Pengeluaran' => 'danger',
+                            }),
+                        TextEntry::make('saldo')
+                            ->label('Total transaksi')
+                            ->money('IDR', locale: 'id'),
+                        TextEntry::make('tgl_transaksi')
+                            ->label('Tgl. Transaksi')
+                            ->date(),
+                        TextEntry::make('catatan')
+                            ->limit(50)
+                            ->tooltip(function (TextEntry $component): ?string {
+                                $state = $component->getState();
+
+                                if (strlen($state) <= $component->getCharacterLimit()) {
+                                    return null;
+                                }
+
+                                // Only render the tooltip if the entry contents exceeds the length limit.
+                                return $state;
+                            })
+                    ])
+                    ->columns([
+                        'xl' => 3,
+                        '2xl' => 3,
+                    ]),
+                Section::make('Informasi Kost')
+                    ->schema([
+                        TextEntry::make('pembayaran.sewaKost.nama_penyewa')
+                            ->label('Penyewa'),
+                        TextEntry::make('pembayaran.sewaKost.cabangKost.nama_kost')
+                            ->label('Cabang Kost'),
+                        TextEntry::make('pembayaran.sewaKost.status_kamar')
+                            ->label('Status Kamar'),
+                        TextEntry::make('pembayaran.sewaKost.biayaKost.tipe')
+                            ->badge()
+                            ->label('Tipe Sewa'),
+                        TextEntry::make('pembayaran.sewaKost.tgl_sewa')
+                            ->label('Check In')
+                            ->date(),
+                        TextEntry::make('pembayaran.sewaKost.tgl_sewa_akhir')
+                            ->label('Check Out')
+                            ->date(),
+                        TextEntry::make('pembayaran.sewaKost.lama_sewa')
+                            ->label('Lama Sewa'),
+
+                    ])
+                    ->columns([
+                        'xl' => 3,
+                        '2xl' => 3,
+                    ])
+                    ->visible(fn(Transaksi $record) => $record->pembayaran !== null),
+
+
+            ]);
     }
 }
