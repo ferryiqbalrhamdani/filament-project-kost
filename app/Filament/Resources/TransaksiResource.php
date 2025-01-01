@@ -46,6 +46,16 @@ class TransaksiResource extends Resource
                     ->numeric(),
                 Forms\Components\DatePicker::make('tgl_transaksi')
                     ->required(),
+                Forms\Components\Radio::make('status_kamar')
+                    ->inline()
+                    ->inlineLabel(false)
+                    ->options([
+                        'Tidak Ada' => 'Tidak Ada',
+                        'Kamar Atas' => 'Kamar Atas',
+                        'Kamar Bawah' => 'Kamar Bawah'
+                    ])
+                    ->default('Tidak Ada')
+                    ->required(),
                 Forms\Components\Textarea::make('catatan')
                     ->columnSpanFull(),
             ]);
@@ -64,7 +74,12 @@ class TransaksiResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('catatan')
                     ->searchable()
-                    ->description(fn(Transaksi $record): string => $record->catatan === 'Sewa kost' ? $record->pembayaran->sewaKost->status_kamar : ''),
+                    ->description(
+                        fn(Transaksi $record): string =>
+                        $record->catatan === 'Sewa kost'
+                            ? ($record->pembayaran->sewaKost->status_kamar ?? $record->status_kamar)
+                            : $record->status_kamar
+                    ),
                 Tables\Columns\TextColumn::make('tgl_transaksi')
                     ->label('Tanggal Transaksi')
                     ->date()
@@ -132,11 +147,19 @@ class TransaksiResource extends Resource
                             ]),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['status_kamar'] ?? null,
-                                fn(Builder $query, $statusKamar): Builder => $query->whereHas('pembayaran', fn(Builder $query) => $query->whereHas('sewaKost', fn(Builder $query) => $query->where('status_kamar', $statusKamar))),
-                            );
+                        return $query->when(
+                            $data['status_kamar'] ?? null,
+                            function (Builder $query, $statusKamar): Builder {
+                                return $query->where(function (Builder $query) use ($statusKamar) {
+                                    $query->where('status_kamar', $statusKamar) // Filter langsung dari Transaksi
+                                        ->orWhereHas('pembayaran', function (Builder $query) use ($statusKamar) {
+                                            $query->whereHas('sewaKost', function (Builder $query) use ($statusKamar) {
+                                                $query->where('status_kamar', $statusKamar); // Filter dari relasi sewaKost
+                                            });
+                                        });
+                                });
+                            }
+                        );
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
@@ -216,6 +239,7 @@ class TransaksiResource extends Resource
                         TextEntry::make('tgl_transaksi')
                             ->label('Tgl. Transaksi')
                             ->date(),
+                        TextEntry::make('status_kamar'),
                         TextEntry::make('catatan')
                             ->limit(50)
                             ->tooltip(function (TextEntry $component): ?string {
@@ -230,8 +254,8 @@ class TransaksiResource extends Resource
                             })
                     ])
                     ->columns([
-                        'xl' => 3,
-                        '2xl' => 3,
+                        'xl' => 4,
+                        '2xl' => 4,
                     ]),
                 Section::make('Informasi Kost')
                     ->schema([
