@@ -36,6 +36,7 @@ class TransaksiResource extends Resource
                     ->options([
                         'Pemasukan' => 'Pemasukan',
                         'Pengeluaran' => 'Pengeluaran',
+                        'Pendapatan' => 'Pendapatan',
                     ])
                     ->default('Pengeluaran')
                     ->required(),
@@ -70,13 +71,14 @@ class TransaksiResource extends Resource
                     ->color(fn(string $state): string => match ($state) {
                         'Pemasukan' => 'success',
                         'Pengeluaran' => 'danger',
+                        'Pendapatan' => 'info',
                     })
                     ->searchable(),
                 Tables\Columns\TextColumn::make('catatan')
                     ->searchable()
                     ->description(
                         fn(Transaksi $record): string =>
-                        $record->catatan === 'Sewa kost'
+                        $record->status_kamar !== null
                             ? ($record->pembayaran->sewaKost->status_kamar ?? $record->status_kamar)
                             : $record->status_kamar
                     ),
@@ -87,8 +89,12 @@ class TransaksiResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('saldo')
                     ->money('IDR', locale: 'id')
-                    ->color(fn($record) => $record->jenis_transaksi === 'Pemasukan' ? 'success' : 'danger')
-                    ->prefix(fn($record) => $record->jenis_transaksi === 'Pemasukan' ? '' : '-')
+                    ->color(fn($record) => match ($record->jenis_transaksi) {
+                        'Pemasukan' => 'success',
+                        'Pengeluaran' => 'danger',
+                        'Pendapatan' => 'info',
+                    })
+                    // ->prefix(fn($record) => $record->jenis_transaksi === 'Pemasukan' ? '' : '-')
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
