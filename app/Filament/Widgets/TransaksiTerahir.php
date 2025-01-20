@@ -27,6 +27,7 @@ class TransaksiTerahir extends BaseWidget
                     ->color(fn(string $state): string => match ($state) {
                         'Pemasukan' => 'success',
                         'Pengeluaran' => 'danger',
+                        'Pendapatan' => 'info',
                     })
                     ->searchable(),
                 Tables\Columns\TextColumn::make('catatan')
