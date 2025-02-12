@@ -10,6 +10,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\TransaksiResource;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 
 class TransaksiTerahir extends BaseWidget
 {
@@ -53,41 +54,9 @@ class TransaksiTerahir extends BaseWidget
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\Filter::make('tgl_tansaksi')
-                    ->form([
-                        Forms\Components\DatePicker::make('tgl_transaksi_mulai')
-                            ->placeholder(fn($state): string => 'Dec 18, ' . now()->subYear()->format('Y'))
-                            ->default(function (): string {
-                                return Carbon::create(Carbon::now()->year, Carbon::now()->month, 9);
-                            }),
-                        Forms\Components\DatePicker::make('tgl_transaksi_selesai')
-                            ->placeholder(fn($state): string => now()->format('M d, Y'))
-                            ->default(function (): string {
-                                return Carbon::create(Carbon::now()->year, Carbon::now()->month + 1, 9);
-                            }),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['tgl_transaksi_mulai'] ?? null,
-                                fn(Builder $query, $date): Builder => $query->whereDate('tgl_transaksi', '>=', $date),
-                            )
-                            ->when(
-                                $data['tgl_transaksi_selesai'] ?? null,
-                                fn(Builder $query, $date): Builder => $query->whereDate('tgl_transaksi', '<=', $date),
-                            );
-                    })
-                    ->indicateUsing(function (array $data): array {
-                        $indicators = [];
-                        if ($data['tgl_transaksi_mulai'] ?? null) {
-                            $indicators['tgl_transaksi_mulai'] = 'Tgl. transaksi mulai ' . Carbon::parse($data['tgl_transaksi_mulai'])->toFormattedDateString();
-                        }
-                        if ($data['tgl_transaksi_selesai'] ?? null) {
-                            $indicators['tgl_transaksi_selesai'] = 'Tgl. transaksi selesai ' . Carbon::parse($data['tgl_transaksi_selesai'])->toFormattedDateString();
-                        }
-
-                        return $indicators;
-                    }),
+                DateRangeFilter::make('tgl_transaksi')
+                    ->startDate(Carbon::create(Carbon::now()->year, Carbon::now()->month, 9))
+                    ->endDate(Carbon::create(Carbon::now()->year, Carbon::now()->month + 1, 9)),
             ])
             ->groups([
                 Tables\Grouping\Group::make('tgl_transaksi')

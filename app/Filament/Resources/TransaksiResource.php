@@ -18,6 +18,8 @@ use Filament\Tables\Columns\Summarizers\Sum;
 use App\Filament\Resources\TransaksiResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\TransaksiResource\RelationManagers;
+use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
+use App\Filament\Resources\TransaksiResource\Widgets\PendapatanWidget;
 use App\Filament\Resources\TransaksiResource\Widgets\TransaksiOverview;
 
 class TransaksiResource extends Resource
@@ -108,41 +110,44 @@ class TransaksiResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
-                Tables\Filters\Filter::make('tgl_tansaksi')
-                    ->form([
-                        Forms\Components\DatePicker::make('tgl_transaksi_mulai')
-                            ->placeholder(fn($state): string => 'Dec 18, ' . now()->subYear()->format('Y'))
-                            ->default(function (): string {
-                                return Carbon::create(Carbon::now()->year, Carbon::now()->month, 9);
-                            }),
-                        Forms\Components\DatePicker::make('tgl_transaksi_selesai')
-                            ->placeholder(fn($state): string => now()->format('M d, Y'))
-                            ->default(function (): string {
-                                return Carbon::create(Carbon::now()->year, Carbon::now()->month + 1, 9);
-                            }),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['tgl_transaksi_mulai'] ?? null,
-                                fn(Builder $query, $date): Builder => $query->whereDate('tgl_transaksi', '>=', $date),
-                            )
-                            ->when(
-                                $data['tgl_transaksi_selesai'] ?? null,
-                                fn(Builder $query, $date): Builder => $query->whereDate('tgl_transaksi', '<=', $date),
-                            );
-                    })
-                    ->indicateUsing(function (array $data): array {
-                        $indicators = [];
-                        if ($data['tgl_transaksi_mulai'] ?? null) {
-                            $indicators['tgl_transaksi_mulai'] = 'Tgl. transaksi mulai ' . Carbon::parse($data['tgl_transaksi_mulai'])->toFormattedDateString();
-                        }
-                        if ($data['tgl_transaksi_selesai'] ?? null) {
-                            $indicators['tgl_transaksi_selesai'] = 'Tgl. transaksi selesai ' . Carbon::parse($data['tgl_transaksi_selesai'])->toFormattedDateString();
-                        }
+                DateRangeFilter::make('tgl_transaksi')
+                    ->startDate(Carbon::create(Carbon::now()->year, Carbon::now()->month, 9))
+                    ->endDate(Carbon::create(Carbon::now()->year, Carbon::now()->month + 1, 9)),
+                // Tables\Filters\Filter::make('tgl_tansaksi')
+                //     ->form([
+                //         Forms\Components\DatePicker::make('tgl_transaksi_mulai')
+                //             ->placeholder(fn($state): string => 'Dec 18, ' . now()->subYear()->format('Y'))
+                //             ->default(function (): string {
+                //                 return Carbon::create(Carbon::now()->year, Carbon::now()->month, 9);
+                //             }),
+                //         Forms\Components\DatePicker::make('tgl_transaksi_selesai')
+                //             ->placeholder(fn($state): string => now()->format('M d, Y'))
+                //             ->default(function (): string {
+                //                 return Carbon::create(Carbon::now()->year, Carbon::now()->month + 1, 9);
+                //             }),
+                //     ])
+                //     ->query(function (Builder $query, array $data): Builder {
+                //         return $query
+                //             ->when(
+                //                 $data['tgl_transaksi_mulai'] ?? null,
+                //                 fn(Builder $query, $date): Builder => $query->whereDate('tgl_transaksi', '>=', $date),
+                //             )
+                //             ->when(
+                //                 $data['tgl_transaksi_selesai'] ?? null,
+                //                 fn(Builder $query, $date): Builder => $query->whereDate('tgl_transaksi', '<=', $date),
+                //             );
+                //     })
+                //     ->indicateUsing(function (array $data): array {
+                //         $indicators = [];
+                //         if ($data['tgl_transaksi_mulai'] ?? null) {
+                //             $indicators['tgl_transaksi_mulai'] = 'Tgl. transaksi mulai ' . Carbon::parse($data['tgl_transaksi_mulai'])->toFormattedDateString();
+                //         }
+                //         if ($data['tgl_transaksi_selesai'] ?? null) {
+                //             $indicators['tgl_transaksi_selesai'] = 'Tgl. transaksi selesai ' . Carbon::parse($data['tgl_transaksi_selesai'])->toFormattedDateString();
+                //         }
 
-                        return $indicators;
-                    }),
+                //         return $indicators;
+                //     }),
 
                 Tables\Filters\Filter::make('status_kamar')
                     ->form([
@@ -223,6 +228,7 @@ class TransaksiResource extends Resource
     {
         return [
             TransaksiOverview::class,
+            PendapatanWidget::class,
         ];
     }
 
@@ -238,6 +244,7 @@ class TransaksiResource extends Resource
                             ->color(fn(string $state): string => match ($state) {
                                 'Pemasukan' => 'success',
                                 'Pengeluaran' => 'danger',
+                                'Pendapatan' => 'info',
                             }),
                         TextEntry::make('saldo')
                             ->label('Total transaksi')
